@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double Pendulum Animation</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="600" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+        // 物理参数
+        const g = 9.81; // 重力加速度
+        const L1 = 100; // 第一摆长度 (像素)
+        const L2 = 100; // 第二摆长度 (像素)
+        const m1 = 10;  // 第一摆质量
+        const m2 = 10;  // 第二摆质量
+        const dt = 0.05; // 时间步长
+
+        // 初始条件
+        let theta1 = Math.PI / 2; // 第一摆初始角度
+        let theta2 = Math.PI / 2; // 第二摆初始角度
+        let omega1 = 0; // 第一摆初始角速度
+        let omega2 = 0; // 第二摆初始角速度
+
+        // 绘制参数
+        const originX = canvas.width / 2;
+        const originY = canvas.height / 4;
+
+        // 轨迹数组（用于绘制轨迹）
+        const trail = [];
+        const maxTrailLength = 100;
+
+        function simulate() {
+            // 计算角加速度（基于双摆运动方程）
+            const num1 = -g * (2 * m1 + m2) * Math.sin(theta1);
+            const num2 = -m2 * g * Math.sin(theta1 - 2 * theta2);
+            const num3 = -2 * Math.sin(theta1 - theta2) * m2 * (omega2 * omega2 * L2 + omega1 * omega1 * L1 * Math.cos(theta1 - theta2));
+            const den1 = L1 * (2 * m1 + m2 - m2 * Math.cos(2 * theta1 - 2 * theta2));
+            const alpha1 = (num1 + num2 + num3) / den1;
+
+            const num4 = 2 * Math.sin(theta1 - theta2) * (omega1 * omega1 * L1 * (m1 + m2) + g * (m1 + m2) * Math.cos(theta1) + omega2 * omega2 * L2 * m2 * Math.cos(theta1 - theta2));
+            const den2 = L2 * (2 * m1 + m2 - m2 * Math.cos(2 * theta1 - 2 * theta2));
+            const alpha2 = num4 / den2;
+
+            // 更新角速度和角度（欧拉法）
+            omega1 += alpha1 * dt;
+            omega2 += alpha2 * dt;
+            theta1 += omega1 * dt;
+            theta2 += omega2 * dt;
+        }
+
+        function draw() {
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 计算摆的位置
+            const x1 = originX + L1 * Math.sin(theta1);
+            const y1 = originY + L1 * Math.cos(theta1);
+            const x2 = x1 + L2 * Math.sin(theta2);
+            const y2 = y1 + L2 * Math.cos(theta2);
+
+            // 记录轨迹
+            trail.push({ x: x2, y: y2 });
+            if (trail.length > maxTrailLength) trail.shift();
+
+            // 绘制轨迹
+            ctx.beginPath();
+            ctx.strokeStyle = "rgba(255, 0, 0, 0.5)";
+            for (let i = 0; i < trail.length - 1; i++) {
+                ctx.moveTo(trail[i].x, trail[i].y);
+                ctx.lineTo(trail[i + 1].x, trail[i + 1].y);
+            }
+            ctx.stroke();
+
+            // 绘制第一摆
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(x1, y1);
+            ctx.strokeStyle = "black";
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(x1, y1, m1 / 2, 0, Math.PI * 2);
+            ctx.fillStyle = "blue";
+            ctx.fill();
+
+            // 绘制第二摆
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = "black";
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(x2, y2, m2 / 2, 0, Math.PI * 2);
+            ctx.fillStyle = "green";
+            ctx.fill();
+        }
+
+        function animate() {
+            simulate();
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        // 启动动画
+        animate();
+    </script>
+</body>
+</html>

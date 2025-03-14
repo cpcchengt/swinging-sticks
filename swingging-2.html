@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Chaotic Pendulum Animation</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="600" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+        // 物理参数
+        const g = 9.81; // 重力加速度
+        const L = 200; // 长条总长度 (像素)
+        const L1 = 3 * L / 4; // 固定点到一端的长度
+        const L2 = L / 4; // 固定点到另一端的长度
+        const R = 50; // 圆环半径
+        const m1 = 20; // 长条质量
+        const m2 = 10; // 圆环质量
+        const dt = 0.05; // 时间步长
+
+        // 初始条件
+        let theta = Math.PI / 2; // 长条初始角度
+        let phi = Math.PI / 2; // 圆环初始角度
+        let omega1 = 0; // 长条初始角速度
+        let omega2 = 0; // 圆环初始角速度
+
+        // 绘制参数
+        const originX = canvas.width / 2;
+        const originY = canvas.height / 4;
+
+        // 轨迹数组（用于绘制圆环轨迹）
+        const trail = [];
+        const maxTrailLength = 100;
+
+        function simulate() {
+            // 简化的运动方程（这里用近似方法，实际需要完整拉格朗日推导）
+            // 长条的角加速度
+            const num1 = -g * (m1 * L1 / 2 + m2 * L2) * Math.sin(theta) - m2 * g * R * Math.sin(phi);
+            const den1 = (m1 * (L1 * L1 + L2 * L2) / 3 + m2 * L2 * L2);
+            const alpha1 = num1 / den1;
+
+            // 圆环的角加速度
+            const num2 = -g * Math.sin(phi) - L2 * alpha1 * Math.cos(theta - phi);
+            const den2 = R;
+            const alpha2 = num2 / den2;
+
+            // 更新角速度和角度（欧拉法）
+            omega1 += alpha1 * dt;
+            omega2 += alpha2 * dt;
+            theta += omega1 * dt;
+            phi += omega2 * dt;
+        }
+
+        function draw() {
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 计算长条两端位置
+            const x1 = originX + L1 * Math.sin(theta);
+            const y1 = originY + L1 * Math.cos(theta);
+            const x2 = originX - L2 * Math.sin(theta);
+            const y2 = originY - L2 * Math.cos(theta);
+
+            // 计算圆环中心位置（连接在长条较长一端）
+            const xRing = x2 + R * Math.sin(phi);
+            const yRing = y2 + R * Math.cos(phi);
+
+            // 记录圆环轨迹
+            trail.push({ x: xRing, y: yRing });
+            if (trail.length > maxTrailLength) trail.shift();
+
+            // 绘制轨迹
+            ctx.beginPath();
+            ctx.strokeStyle = "rgba(255, 0, 0, 0.5)";
+            for (let i = 0; i < trail.length - 1; i++) {
+                ctx.moveTo(trail[i].x, trail[i].y);
+                ctx.lineTo(trail[i + 1].x, trail[i + 1].y);
+            }
+            ctx.stroke();
+
+            // 绘制长条
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = "black";
+            ctx.stroke();
+
+            // 绘制固定点
+            ctx.beginPath();
+            ctx.arc(originX, originY, 5, 0, Math.PI * 2);
+            ctx.fillStyle = "black";
+            ctx.fill();
+
+            // 绘制圆环
+            ctx.beginPath();
+            ctx.arc(xRing, yRing, R, 0, Math.PI * 2);
+            ctx.strokeStyle = "blue";
+            ctx.stroke();
+        }
+
+        function animate() {
+            simulate();
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        // 启动动画
+        animate();
+    </script>
+</body>
+</html>
